@@ -1,3 +1,17 @@
+# Databricks Asset Bundle
+#
+# Defines the pipeline as code so the configuration is versioned with the
+# transformations rather than living only in the workspace UI.
+#
+#   databricks bundle validate -t dev
+#   databricks bundle deploy   -t dev
+#   databricks bundle run turbine_etl -t dev
+#
+# Free Edition notes:
+#   - PAT authentication only, OAuth is not supported. Run `databricks configure`.
+#   - Serverless compute only, hence serverless: true.
+#   - One active pipeline per type.
+
 bundle:
   name: poc-wind-farm
 
@@ -7,6 +21,44 @@ sync:
     - tools/**
     - docs/**
 
+variables:
+  catalog:
+    description: Unity Catalog catalog for all pipeline outputs
+    default: turbine_poc
+  schema:
+    description: Schema within the catalog
+    default: wind_farm
+
+resources:
+  pipelines:
+    turbine_etl:
+      name: poc_wind_farm_turbines_etl
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+
+      serverless: true
+
+      # Triggered, not continuous. Continuous keeps compute running and would
+      # consume the daily quota whether or not anything landed.
+      continuous: false
+
+      # All three layers in one pipeline because Free Edition permits one active
+      # pipeline per type. In production I would split ingestion from
+      # transformation so they can be scheduled and scaled independently.
+      libraries:
+        - notebook:
+            path: pipeline/01_bronze.ipynb
+        - file:
+            path: pipeline/02_silver.sql
+        - notebook:
+            path: pipeline/03_gold.ipynb
+      # transforms.py is not listed: it is imported by 03_gold, not a pipeline
+      # source file. It reaches the workspace through sync.include above and sits
+      # in the same folder, so the import resolves.
+
 targets:
   dev:
     mode: development
+    default: true
+    # Development mode prefixes resource names with the deploying user, so the
+    # deployed pipeline appears as "[dev ppuente86] poc_wind_farm_turbines_etl".
