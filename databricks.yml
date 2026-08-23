@@ -1,0 +1,12 @@
+bundle:
+  name: poc-wind-farm
+
+sync:
+  include:
+    - pipeline/**
+    - tools/**
+    - docs/**
+
+targets:
+  dev:
+    mode: development
