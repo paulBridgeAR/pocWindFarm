@@ -20,56 +20,9 @@ ANOMALY_SIGMA = 2.0
 MIN_TURBINES_FOR_FLEET_STATS = 5
  
  
-def clean_readings(df: DataFrame) -> DataFrame:
-    """Cast, remove unusable rows and outliers, deduplicate.
- 
-    Requirement 1. Three separate problems, handled differently on purpose:
- 
-    - Unusable rows (no turbine id, no timestamp) are dropped. Without a key
-      the row cannot be attributed to anything.
-    - Outliers (physically impossible values) are dropped. A negative power
-      reading or 47 m/s wind is a sensor fault, not a measurement.
-    - Missing power readings are dropped, and the loss is reported as
-      completeness_pct in gold rather than being silently absorbed. I do not
-      impute power output: it is the measured business figure, and filling it
-      in invents generation that never happened.
-    """
-    typed = df.select(
-        F.col("turbine_id").cast("int").alias("turbine_id"),
-        F.to_timestamp("timestamp").alias("event_ts"),
-        F.col("wind_speed").cast("double").alias("wind_speed"),
-        F.col("wind_direction").cast("int").alias("wind_direction"),
-        F.col("power_output").cast("double").alias("power_output"),
-        F.col("source_file"),
-        F.col("ingest_ts"),
-    )
- 
-    usable = typed.filter(
-        F.col("turbine_id").isNotNull() & F.col("event_ts").isNotNull()
-    )
- 
-    # Outliers out. Null wind is tolerated - it is context, not the measure.
-    in_range = usable.filter(
-        F.col("power_output").between(POWER_MIN_MW, POWER_MAX_MW)
-        & (F.col("wind_speed").isNull()
-           | F.col("wind_speed").between(WIND_SPEED_MIN, WIND_SPEED_MAX))
-        & (F.col("wind_direction").isNull()
-           | F.col("wind_direction").between(WIND_DIR_MIN, WIND_DIR_MAX))
-    )
- 
-    # between() is null-safe and returns null, so a missing power reading is
-    # removed here too. That is the intent: "removed or imputed", and I remove.
-    return (
-        in_range
-        .withColumn("stats_date", F.to_date("event_ts"))
-        .dropDuplicates(["turbine_id", "event_ts"])
-    )
- 
- 
 def daily_stats(df: DataFrame, expected: int = EXPECTED_READINGS_PER_DAY) -> DataFrame:
     """Requirement 2: min, max and average power per turbine per day.
- 
-    completeness_pct sits beside every average so a consumer can tell an average
+     completeness_pct sits beside every average so a consumer can tell an average
     over 24 readings from one over 6.
     """
     return (
