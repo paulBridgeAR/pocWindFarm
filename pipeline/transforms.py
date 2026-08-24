@@ -4,19 +4,13 @@ Nothing here imports the pipeline API. That is deliberate: declarative pipeline
 code only executes inside a pipeline run, so any logic written inside the
 decorated functions cannot be unit tested. Keeping it here means the same code
 runs on Databricks and under pytest with a local SparkSession.
- 
-Cleaning is not here. It lives in 02_silver.sql as declarative expectations, where
-Databricks enforces the rules and records pass/fail counts per rule in the event
-log. This module holds only the computation, which is what is worth testing.
+
 """
  
 from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as F
  
-# --- thresholds. One place, no magic numbers anywhere else -------------------
-# The physical range bounds are not here: they are expectations in 02_silver.sql,
-# and duplicating them would give two sources of truth that can drift apart.
- 
+
 EXPECTED_READINGS_PER_DAY = 24
 ANOMALY_SIGMA = 2.0
 MIN_TURBINES_FOR_FLEET_STATS = 5
