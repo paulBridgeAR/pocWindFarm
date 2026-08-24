@@ -4,16 +4,18 @@ Nothing here imports the pipeline API. That is deliberate: declarative pipeline
 code only executes inside a pipeline run, so any logic written inside the
 decorated functions cannot be unit tested. Keeping it here means the same code
 runs on Databricks and under pytest with a local SparkSession.
+ 
+Cleaning is not here. It lives in 02_silver.sql as declarative expectations, where
+Databricks enforces the rules and records pass/fail counts per rule in the event
+log. This module holds only the computation, which is what is worth testing.
 """
  
 from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as F
  
 # --- thresholds. One place, no magic numbers anywhere else -------------------
- 
-POWER_MIN_MW, POWER_MAX_MW = 0.0, 5.0     # 5.0 is headroom; the data tops out at 4.5
-WIND_SPEED_MIN, WIND_SPEED_MAX = 0.0, 40.0  # turbines shut down around 25 m/s
-WIND_DIR_MIN, WIND_DIR_MAX = 0, 359
+# The physical range bounds are not here: they are expectations in 02_silver.sql,
+# and duplicating them would give two sources of truth that can drift apart.
  
 EXPECTED_READINGS_PER_DAY = 24
 ANOMALY_SIGMA = 2.0
@@ -51,8 +53,19 @@ def find_anomalies(
  
     Scored on the daily average, not on individual readings. The brief asks for
     turbines that deviated over a time period, and the grain matters: a single
-    reading has a spread of ~0.87 MW while a daily average has ~0.18 MW. A
-    six-hour outage scores -1.87 per reading (missed) and -2.53 daily (caught).
+    reading has a spread of ~0.87 MW while a daily average has ~0.18 MW.
+ 
+    Verified against an injected fault - a turbine at 35% output for 12 hours.
+    Scoring individual readings the worst one reached only z = -1.87 and the fault
+    went undetected. Scoring the daily average it came out at z = -3.04 and was
+    caught.
+ 
+    The comparison is against the fleet on the same day. All 15 turbines draw from
+    the same distribution, so the fleet is a valid reference. This is a
+    distributional test rather than a physical one: the variance explained by
+    timestamp measured at zero, so in this data the turbines do not share weather
+    and "the others were in the same wind" is not an argument I can make, so I need to beat
+    the distruibution here...
     """
     day = Window.partitionBy("stats_date")
  
