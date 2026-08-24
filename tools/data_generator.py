@@ -1,24 +1,24 @@
 """Source simulator - stands in for the SCADA system.
  
-Reads the pristine month from source_data and lands it into the raw landing zone
+Reads the source_data and lands it into the raw landing zone
 one day at a time, injecting faults on the way.
  
 Not part of the pipeline. Not deployed, not scheduled. In production the source
-system writes these files itself.
+system should write these files itself.
  
 Every injected fault is recorded in a manifest, which is the expected result the
 tests assert against. Seeded, so the same day always produces the same files.
  
-    python source_simulator.py                    # land the next unlanded day
-    python source_simulator.py --day 2022-03-12   # land a specific day
-    python source_simulator.py --all              # land every remaining day
-    python source_simulator.py --reset            # clear the landing zone first
-    python source_simulator.py --clean            # no faults
+    python data_generator.py                    # land the next unlanded day
+    python data_generator.py --day 2022-03-12   # land a specific day
+    python data_generator.py --all              # land every remaining day
+    python data_generator.py --reset            # clear the landing zone first
+    python data_generator.py --clean            # no faults
  
 From a Databricks notebook:
  
-    %run ./source_simulator
-    land_next()
+    import data_generator as gen
+    gen.land_next()
 """
  
 import argparse
@@ -35,7 +35,7 @@ SEED = 79   # Rolling Stones fan. Always this one.
  
 SOURCE   = "/Volumes/turbine_poc/wind_farm/landing/source_data"
 RAW      = "/Volumes/turbine_poc/wind_farm/landing/raw"
-MANIFEST = "/Volumes/turbine_poc/wind_farm/landing/manifest"   # outside RAW - never ingested
+MANIFEST = "/Volumes/turbine_poc/wind_farm/landing/manifest"   
  
 # Background faults on every day. Low, so the data still resembles the original.
 BACKGROUND = {
@@ -43,19 +43,20 @@ BACKGROUND = {
     "null_rate": 0.005,
     "corrupt_n": 1,         # per group per day
 }
- 
+
+#DS I was thinking  of the rates to be random  but then the tests would not be reproducible. The manifest would not match the files.
+
 # Deliberate faults on specific days. This is the scenario the tests assert against.
-# Turbines 1-5 are in group 1, 6-10 in group 2, 11-15 in group 3.
 SCENARIO = {
-    "2022-03-12": [
-        # Sensor offline for 6 hours. Readings never arrive, so completeness drops
+    "2022-03-02": [
+        # Sensor offline for 6 hours. Readings never arrive, so completeness drops 
         # to 75%. Verified: turbine 3 reading_count 18, no anomaly raised.
         ("outage",       {"turbine_id": 3, "start_hour": 8, "hours": 6}),
  
         # Turbine underperforms for 12 hours. Every value stays legal - in range,
         # not null, correctly typed - so the cleaning rules must NOT reject these
         # rows. Only gold, scoring the daily average, should catch it.
-        # Verified: daily avg 2.91 -> 2.01, z-score -0.54 -> -3.15.
+        # Measured: daily avg 2.91 -> 2.06, z-score -0.54 -> -3.035, flagged.
         ("underperform", {"turbine_id": 7, "start_hour": 6, "hours": 12, "factor": 0.35}),
     ],
 }
@@ -68,12 +69,18 @@ MANIFEST_FIELDS = ["fault", "day", "turbine_id", "timestamp", "field", "original
 # --------------------------------------------------------------------------
  
 def rng_for(name):
-    """Independent, reproducible generator per fault per day.
- 
-    A single shared generator would leak between faults: adding one earlier in the
-    chain changes which rows every later fault touches, and the manifest stops
-    matching the files. String seeds go through sha512, so this is stable across
-    processes.
+    """Give each fault, on each day, its own set of dice.
+
+    Random numbers come out of a stream, in order. If every fault shared one
+    stream, what the third fault draws would depend on how many numbers the first
+    two already took - so adding a fault silently moves the rows the others hit,
+    and the manifest ends up describing rows that are still in the file.
+
+    Seeding from a string is safe: random.Random hashes it with sha512, not with
+    Python's hash(), which is randomised per process. Same name, same numbers,
+    on any machine, on any run.
+
+    Both properties are pinned down in tests/test_data_generator.py.
     """
     return random.Random(f"{SEED}::{name}")
  
