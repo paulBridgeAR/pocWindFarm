@@ -56,7 +56,7 @@ SCENARIO = {
         # Turbine underperforms for 12 hours. Every value stays legal - in range,
         # not null, correctly typed - so the cleaning rules must NOT reject these
         # rows. Only gold, scoring the daily average, should catch it.
-        # Measured: daily avg 2.91 -> 2.06, z-score -0.54 -> -3.035, flagged.
+        # Measured: daily avg 2.98 -> 2.16, z-score -2.577, -0.822 MW, flagged.
         ("underperform", {"turbine_id": 7, "start_hour": 6, "hours": 12, "factor": 0.35}),
     ],
 }

@@ -115,10 +115,18 @@ turbines that deviated over a time period, and the grain decides whether the who
 works. A single reading has a spread of about 0.87 MW; a daily average of 24 readings has
 about 0.18 — five times tighter, because averaging cancels the noise.
 
-I tested it. A turbine running at 35% output for 12 hours: scoring individual readings,
-the worst one reached z = -1.87 and the fault went completely undetected. Scoring the
-daily average, the same fault came out at **z = -3.035** and was caught. The noise is in
-the readings and the signal is in the aggregate.
+I tested it with an injected fault - a turbine at 35% output for 12 hours. Scored on
+individual readings the fault is indistinguishable from ordinary variation, because a
+single reading is drawn from a spread five times wider than the daily average. Scored on
+the daily average it comes out at **z = -2.577, 0.822 MW below the fleet** - the largest
+deviation of any of the 17 flags, where the next largest is 0.523. The noise is in the
+readings and the signal is in the aggregate.
+
+Worth being precise about what that flag is worth. By z-score alone the fault ranks
+fourth of 17, behind pure sampling noise on other days, because the z-score divides by
+that day's fleet spread. By deviation in MW it ranks first by a clear margin. That is an
+argument for reporting both and ranking by severity, not for trusting a 2-sigma
+boolean.
 
 **15. Each turbine is compared against the fleet on the same day.**
 I checked whether the turbines share weather, because that is normally the argument for

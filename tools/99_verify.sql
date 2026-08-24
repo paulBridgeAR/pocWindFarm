@@ -23,7 +23,7 @@ SELECT 'gold_anomalies', COUNT(*)   FROM turbine_poc.wind_farm.gold_turbine_anom
 -- Turbine 7 underperformed for 12 hours. The values are all legal, so silver
 -- lets them through and only the daily average gives it away.
 SELECT * FROM turbine_poc.wind_farm.gold_turbine_anomalies
-WHERE stats_date = '2022-03-02';                    -- turbine 7, z = -3.035
+WHERE stats_date = '2022-03-02';                    -- turbine 7, z = -2.577, -0.822 MW
 
 -- Turbine 3 lost 6 hours to a sensor outage. Its average is normal, so it is
 -- not an anomaly - the problem shows in completeness instead.

@@ -124,9 +124,9 @@ Anomalies are scored on the daily average per turbine, not on individual reading
 </DECISION>
 
 The daily average of 24 readings has a spread of about 0.18 MW, five times tighter,
-because the noise cancels when you average. Same fault, same data, same rule - z went
-from -1.87 (missed) to -3.04 (caught). The signal was always there, I was just looking
-at the wrong grain.
+because the noise cancels when you average. Same fault, same data, same rule - the
+daily average caught what the readings had missed. The signal was always there, I was
+just looking at the wrong grain.
 
 That also made gold simpler. Requirement 2 produces the daily statistics and
 requirement 3 scores them, so they chain instead of both windowing over raw readings.
@@ -164,7 +164,7 @@ than trust it.
 Two deliberate faults on 2 March, chosen so they show up in different places:
 turbine 3 loses 6 hours to an outage, turbine 7 runs at 35% for 12 hours. Turbine 3
 ends up at 75% completeness and raises no anomaly, because its average is fine.
-Turbine 7 has nearly complete data and z = -3.035. Missing data and abnormal data,
+Turbine 7 has complete data and z = -2.577, 0.822 MW below the fleet. Missing data and abnormal data,
 reported separately.
 
 # Results

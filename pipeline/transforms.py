@@ -50,9 +50,9 @@ def find_anomalies(
     reading has a spread of ~0.87 MW while a daily average has ~0.18 MW.
  
     Verified against an injected fault - a turbine at 35% output for 12 hours.
-    Scoring individual readings the worst one reached only z = -1.87 and the fault
-    went undetected. Scoring the daily average it came out at z = -3.04 and was
-    caught.
+    On individual readings the fault is lost in the spread. On the daily average it
+    comes out at z = -2.577 and -0.822 MW, the largest deviation of the 17 flags
+    raised across the month, where the next largest is -0.523.
  
     The comparison is against the fleet on the same day. All 15 turbines draw from
     the same distribution, so the fleet is a valid reference. This is a

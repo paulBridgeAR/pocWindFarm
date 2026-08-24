@@ -134,21 +134,23 @@ simulator either. Running the same rule over the untouched source CSVs, with not
 injected, flags 17 turbine-days as well, spread across 17 different days. The threshold
 is doing what a threshold does.
 
-What separates the real fault from that background is magnitude. The worst flag in the
-clean data reaches z = -2.63; turbine 7 reaches -3.035, with roughly double the
-deviation in MW. So the output is worth ranking by |z| rather than treating every flag
-as an alert - which is also why the anomaly table carries `z_score` and `deviation_mw`
-rather than a boolean.
+The z-score alone does not separate the real fault from that background: turbine 7
+scores -2.577 while noise on other days reaches -2.722. The z-score divides by that
+day's fleet spread, so the same fault scores lower on a day the fleet happens to be
+more scattered. The **deviation in MW** does separate it - turbine 7 is 0.822 MW below
+the fleet, where the largest noise deviation is 0.523. Ranked by deviation the injected
+fault is first by a clear margin; ranked by z-score it is fourth. That is why the table
+carries `z_score` and `deviation_mw` side by side rather than a boolean.
 
 **The two deliberate faults**, both on 2 March, show up in different places:
 
 | | Fault | Completeness | Anomaly |
 |---|---|---|---|
 | Turbine 3 | Sensor offline 6h | **75%** | not flagged |
-| Turbine 7 | 12h at 35% output | 95.8% | **z = −3.035** |
+| Turbine 7 | 12h at 35% output | 100% | **z = −2.577, −0.822 MW** |
 
 Turbine 3 lost data but its average is normal. Turbine 7 has nearly complete data but a
-daily average of 2.06 against a fleet mean of 2.92. Missing data and abnormal data are
+daily average of 2.16 against a fleet mean of 2.98. Missing data and abnormal data are
 different problems, reported separately.
 
 ## Design decisions
@@ -158,8 +160,8 @@ production. The four that matter most:
 
 **Anomalies are scored on the daily average, not individual readings.** A single
 reading has a spread of ~0.87 MW; a daily average has ~0.18. I tested it with an
-injected fault — per-reading scoring missed it at z = −1.87, daily scoring caught it at
-−3.035. The brief asks for turbines that deviated over a period, and the grain decides
+injected fault: per-reading scoring is drowned in noise, while the daily average
+isolates it. The brief asks for turbines that deviated over a period, and the grain decides
 whether it works at all.
 
 **Missing power is removed, not imputed.** It's the measured business figure — imputing
