@@ -10,7 +10,7 @@ Every injected fault is recorded in a manifest, which is the expected result the
 tests assert against. Seeded, so the same day always produces the same files.
  
     python data_generator.py                    # land the next unlanded day
-    python data_generator.py --day 2022-03-12   # land a specific day
+    python data_generator.py --day 2022-03-02   # land a specific day
     python data_generator.py --all              # land every remaining day
     python data_generator.py --reset            # clear the landing zone first
     python data_generator.py --clean            # no faults

@@ -161,7 +161,7 @@ Everything is seeded so the same day always produces the same files, and it writ
 manifest of what it broke. That manifest is what lets me check the pipeline rather
 than trust it.
 
-Two deliberate faults on 12 March, chosen so they show up in different places:
+Two deliberate faults on 2 March, chosen so they show up in different places:
 turbine 3 loses 6 hours to an outage, turbine 7 runs at 35% for 12 hours. Turbine 3
 ends up at 75% completeness and raises no anomaly, because its average is fine.
 Turbine 7 has nearly complete data and z = -3.035. Missing data and abnormal data,

@@ -17,18 +17,18 @@ SELECT 'gold_anomalies', COUNT(*)   FROM turbine_poc.wind_farm.gold_turbine_anom
 -- the generator injected.
 
 
--- The two faults I injected deliberately, both on 12 March.
+-- The two faults I injected deliberately, both on 2 March.
 -- They show up in different places, which is the point of having both.
 
 -- Turbine 7 underperformed for 12 hours. The values are all legal, so silver
 -- lets them through and only the daily average gives it away.
 SELECT * FROM turbine_poc.wind_farm.gold_turbine_anomalies
-WHERE stats_date = '2022-03-12';                    -- turbine 7, z = -3.035
+WHERE stats_date = '2022-03-02';                    -- turbine 7, z = -3.035
 
 -- Turbine 3 lost 6 hours to a sensor outage. Its average is normal, so it is
 -- not an anomaly - the problem shows in completeness instead.
 SELECT * FROM turbine_poc.wind_farm.gold_turbine_daily_stats
-WHERE stats_date = '2022-03-12' AND turbine_id = 3; -- 18 readings, 75%
+WHERE stats_date = '2022-03-02' AND turbine_id = 3; -- 18 readings, 75%
 
 
 -- Which expectations actually fired, per rule per run.

@@ -29,8 +29,9 @@ shuffled timestamps score the same.
 ![Power vs wind speed](docs/images/power_curve_comparison.png)
 
 That matters because a uniform distribution spans only 1.73 standard deviations end to
-end, so **no reading can ever be 2 standard deviations from the mean**. The rule the
-brief asks for cannot fire on this data.
+end, so **no individual reading can ever be 2 standard deviations from the mean**. On
+daily averages the rule does fire - but only on sampling noise, never on a real fault,
+because there are no real faults in this data to find.
 
 So I wrote a source simulator that replays the month one day at a time and injects
 faults, recording every one in a manifest. That is what lets me verify detection
@@ -69,8 +70,17 @@ Upload the CSVs from [`data/`](data) to `/Volumes/turbine_poc/wind_farm/landing/
 ```python
 # 2. Generate data — tools/nb_data_generator_run.ipynb
 import data_generator as gen
-gen.land_next(noise=True)      # run repeatedly to walk through the month
+
+gen.land_next(noise=True)          # one day - run the pipeline, repeat
+
+while gen.land_next(noise=True):   # or the whole month in one go
+    pass
+gen.summarise()
 ```
+
+A day at a time is how the source actually behaves, and running the pipeline between
+each one shows the incremental load working. The loop lands all 31 days at once, which
+is what reproduces the numbers in [Results](#results).
 
 ```bash
 # 3. Deploy and run in Databricks
@@ -113,13 +123,24 @@ and per-rule pass/fail counts from the event log.
 | `gold_turbine_daily_stats` | 465 *(15 turbines × 31 days)* |
 | `gold_turbine_anomalies` | 17 |
 
+![Pipeline run](docs/images/pipeline_run.png)
+
 The 150 is exact — the simulator injected 57 nulls and 93 out-of-range values, and the
 pipeline rejected exactly those. Nothing missed, nothing good discarded.
 
-17 of 465 turbine-days is 3.7%, which is the false-positive rate a 2σ threshold
-produces on any well-behaved population. Those are not 17 real faults.
+17 of 465 turbine-days is 3.7% - the false-positive rate a 2σ threshold produces on any
+well-behaved population. Those are not 17 real faults, and they are not artefacts of my
+simulator either. Running the same rule over the untouched source CSVs, with nothing
+injected, flags 17 turbine-days as well, spread across 17 different days. The threshold
+is doing what a threshold does.
 
-**The two deliberate faults**, both on 12 March, show up in different places:
+What separates the real fault from that background is magnitude. The worst flag in the
+clean data reaches z = -2.63; turbine 7 reaches -3.035, with roughly double the
+deviation in MW. So the output is worth ranking by |z| rather than treating every flag
+as an alert - which is also why the anomaly table carries `z_score` and `deviation_mw`
+rather than a boolean.
+
+**The two deliberate faults**, both on 2 March, show up in different places:
 
 | | Fault | Completeness | Anomaly |
 |---|---|---|---|
